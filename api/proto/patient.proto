@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package vetclinic.patient.v1;
+
+option go_package = "vetclinic/gen/patient/v1;patientv1";
+
+service PatientService {
+  rpc VerifyPetOwnership (VerifyPetOwnershipRequest) returns (VerifyPetOwnershipResponse);
+}
+
+message VerifyPetOwnershipRequest {
+  string pet_id = 1;   
+  string owner_id = 2;  
+}
+
+message VerifyPetOwnershipResponse {
+  bool exists = 1;
+  bool belongs_to_owner = 2;
+  string pet_name = 3;
+  string species = 4;
+}
