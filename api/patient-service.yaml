@@ -171,24 +171,6 @@ paths:
                 species: CAT
         '404':
           $ref: '#/components/responses/NotFound'
-webhooks:
-  medicalRecordCreated:
-    post:
-      tags:
-      - internal
-      operationId: onMedicalRecordCreatedEvent
-      summary: 'Событие Kafka (vet.medical): добавлена запись в медкарту'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MedicalRecordCreatedEvent'
-      responses:
-        '200':
-          description: Событие обработано подписчиком
-        '400':
-          $ref: '#/components/responses/BadRequest'
 components:
   parameters:
     IdempotencyKey:
@@ -418,56 +400,6 @@ components:
           type: string
         species:
           type: string
-    MedicalRecordCreatedEvent:
-      type: object
-      description: 'Kafka топик: vet.medical | Издатель: patient-service | Подписчик: notification-service'
-      required:
-      - eventId
-      - eventType
-      - schemaVersion
-      - occurredAt
-      - correlationId
-      - payload
-      properties:
-        eventId:
-          type: string
-          format: uuid
-        eventType:
-          type: string
-          enum:
-          - medical.record.created
-        schemaVersion:
-          type: integer
-          example: 1
-        occurredAt:
-          type: string
-          format: date-time
-        correlationId:
-          type: string
-          format: uuid
-        payload:
-          type: object
-          required:
-          - recordId
-          - petId
-          - ownerId
-          - appointmentId
-          - summary
-          properties:
-            recordId:
-              type: string
-              format: uuid
-            petId:
-              type: string
-              format: uuid
-            ownerId:
-              type: string
-              format: uuid
-            appointmentId:
-              type: string
-              format: uuid
-            summary:
-              type: string
     Problem:
       type: object
       description: Единая модель ошибок RFC 9457 (application/problem+json)
@@ -497,3 +429,4 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT-токен, выданный Keycloak (OAuth 2.0 / OIDC)
+
