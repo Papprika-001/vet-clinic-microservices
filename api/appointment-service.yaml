@@ -192,41 +192,6 @@ paths:
                 $ref: '#/components/schemas/Appointment'
         '404':
           $ref: '#/components/responses/NotFound'
-webhooks:
-  appointmentConfirmed:
-    post:
-      tags:
-      - internal
-      operationId: onAppointmentConfirmedEvent
-      summary: 'Событие Kafka (vet.appointments): запись подтверждена'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AppointmentConfirmedEvent'
-      responses:
-        '200':
-          description: Событие обработано подписчиком
-        '400':
-          $ref: '#/components/responses/BadRequest'
-  billingRefundRequested:
-    post:
-      tags:
-      - internal
-      operationId: onBillingRefundRequestedCommand
-      summary: 'Команда Kafka (vet.billing.commands): запрос возврата средств'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BillingRefundRequestedCommand'
-      responses:
-        '200':
-          description: Команда принята к исполнению
-        '400':
-          $ref: '#/components/responses/BadRequest'
 components:
   parameters:
     IdempotencyKey:
@@ -370,102 +335,6 @@ components:
           type: integer
         totalPages:
           type: integer
-    AppointmentConfirmedEvent:
-      type: object
-      description: 'Kafka топик: vet.appointments | Издатель: appointment-service | Подписчики: notification-service, patient-service'
-      required:
-      - eventId
-      - eventType
-      - schemaVersion
-      - occurredAt
-      - correlationId
-      - payload
-      properties:
-        eventId:
-          type: string
-          format: uuid
-        eventType:
-          type: string
-          enum:
-          - appointment.confirmed
-        schemaVersion:
-          type: integer
-          example: 1
-        occurredAt:
-          type: string
-          format: date-time
-        correlationId:
-          type: string
-          format: uuid
-        payload:
-          type: object
-          required:
-          - appointmentId
-          - ownerId
-          - petId
-          - vetId
-          - slotStart
-          properties:
-            appointmentId:
-              type: string
-              format: uuid
-            ownerId:
-              type: string
-              format: uuid
-            petId:
-              type: string
-              format: uuid
-            vetId:
-              type: string
-              format: uuid
-            slotStart:
-              type: string
-              format: date-time
-    BillingRefundRequestedCommand:
-      type: object
-      description: 'Kafka топик: vet.billing.commands | Издатель: appointment-service | Подписчик: billing-service'
-      required:
-      - eventId
-      - eventType
-      - schemaVersion
-      - occurredAt
-      - correlationId
-      - payload
-      properties:
-        eventId:
-          type: string
-          format: uuid
-        eventType:
-          type: string
-          enum:
-          - billing.refund.requested
-        schemaVersion:
-          type: integer
-          example: 1
-        occurredAt:
-          type: string
-          format: date-time
-        correlationId:
-          type: string
-          format: uuid
-        payload:
-          type: object
-          required:
-          - appointmentId
-          - paymentId
-          - reason
-          properties:
-            appointmentId:
-              type: string
-              format: uuid
-            paymentId:
-              type: string
-              format: uuid
-            reason:
-              type: string
-              enum:
-              - LATE_PAYMENT_AFTER_EXPIRY
-              - USER_CANCELLED
     Problem:
       type: object
       description: Единая модель ошибок RFC 9457 (application/problem+json)
@@ -495,3 +364,4 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT-токен, выданный Keycloak (OAuth 2.0 / OIDC)
+
