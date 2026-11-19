@@ -1,0 +1,256 @@
+asyncapi: 3.0.0
+info:
+  title: Vet Clinic Event-Driven API
+  version: 1.0.0
+servers:
+  kafka:
+    host: kafka:9092
+    protocol: kafka
+    description: Основной брокер событий Apache Kafka
+channels:
+  vetPayments:
+    address: vet.payments
+    description: События жизненного цикла платежей и возвратов (издатель — billing-service)
+    messages:
+      paymentCompleted:
+        $ref: '#/components/messages/PaymentCompleted'
+      paymentFailed:
+        $ref: '#/components/messages/PaymentFailed'
+      paymentRefunded:
+        $ref: '#/components/messages/PaymentRefunded'
+  vetAppointments:
+    address: vet.appointments
+    description: События жизненного цикла записей на приём (издатель — appointment-service)
+    messages:
+      appointmentConfirmed:
+        $ref: '#/components/messages/AppointmentConfirmed'
+      appointmentCancelled:
+        $ref: '#/components/messages/AppointmentCancelled'
+      appointmentExpired:
+        $ref: '#/components/messages/AppointmentExpired'
+  vetBillingCommands:
+    address: vet.billing.commands
+    description: Команды финансовому сервису, включая компенсирующие действия Саги
+    messages:
+      billingRefundRequested:
+        $ref: '#/components/messages/BillingRefundRequested'
+  vetMedical:
+    address: vet.medical
+    description: Медицинские события по пациентам (издатель — patient-service)
+    messages:
+      medicalRecordCreated:
+        $ref: '#/components/messages/MedicalRecordCreated'
+
+operations:
+  publishPaymentEvents:
+    action: send
+    channel:
+      $ref: '#/channels/vetPayments'
+    summary: billing-service публикует результаты оплаты и возвратов
+  consumePaymentEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/vetPayments'
+    summary: appointment-service и notification-service обрабатывают события платежей
+  publishAppointmentEvents:
+    action: send
+    channel:
+      $ref: '#/channels/vetAppointments'
+    summary: appointment-service публикует изменения статуса записи
+  consumeAppointmentEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/vetAppointments'
+    summary: notification-service и patient-service реагируют на подтверждение/отмену записи
+  sendRefundCommand:
+    action: send
+    channel:
+      $ref: '#/channels/vetBillingCommands'
+    summary: appointment-service отправляет команду на возврат средств (компенсация Саги)
+  handleRefundCommand:
+    action: receive
+    channel:
+      $ref: '#/channels/vetBillingCommands'
+    summary: billing-service выполняет возврат средств через внешний платёжный шлюз
+  publishMedicalEvents:
+    action: send
+    channel:
+      $ref: '#/channels/vetMedical'
+    summary: patient-service публикует готовность медицинской записи / результатов анализов
+  consumeMedicalEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/vetMedical'
+    summary: notification-service уведомляет владельца о готовности выписки
+
+components:
+  messages:
+    PaymentCompleted:
+      name: payment.completed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PaymentCompletedEnvelope'
+    PaymentFailed:
+      name: payment.failed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PaymentFailedEnvelope'
+    PaymentRefunded:
+      name: payment.refunded
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PaymentRefundedEnvelope'
+    AppointmentConfirmed:
+      name: appointment.confirmed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AppointmentConfirmedEnvelope'
+    AppointmentCancelled:
+      name: appointment.cancelled
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AppointmentCancelledEnvelope'
+    AppointmentExpired:
+      name: appointment.expired
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AppointmentExpiredEnvelope'
+    BillingRefundRequested:
+      name: billing.refund.requested
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/BillingRefundRequestedEnvelope'
+    MedicalRecordCreated:
+      name: medical.record.created
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/MedicalRecordCreatedEnvelope'
+
+  schemas:
+    EventBase:
+      type: object
+      required: [eventId, eventType, schemaVersion, occurredAt, correlationId, payload]
+      properties:
+        eventId: { type: string, format: uuid }
+        eventType: { type: string }
+        schemaVersion: { type: integer, example: 1 }
+        occurredAt: { type: string, format: date-time }
+        correlationId: { type: string, format: uuid }
+
+    PaymentCompletedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: "payment.completed" }
+            payload:
+              type: object
+              required: [paymentId, appointmentId, amount, currency]
+              properties:
+                paymentId: { type: string, format: uuid }
+                appointmentId: { type: string, format: uuid }
+                amount: { type: number }
+                currency: { type: string, example: "RUB" }
+
+    PaymentFailedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: "payment.failed" }
+            payload:
+              type: object
+              required: [paymentId, appointmentId, reason]
+              properties:
+                paymentId: { type: string, format: uuid }
+                appointmentId: { type: string, format: uuid }
+                reason: { type: string, example: "INSUFFICIENT_FUNDS" }
+
+    PaymentRefundedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: "payment.refunded" }
+            payload:
+              type: object
+              required: [refundId, paymentId, appointmentId, amount, currency]
+              properties:
+                refundId: { type: string, format: uuid }
+                paymentId: { type: string, format: uuid }
+                appointmentId: { type: string, format: uuid }
+                amount: { type: number }
+                currency: { type: string }
+
+    AppointmentConfirmedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: "appointment.confirmed" }
+            payload:
+              type: object
+              required: [appointmentId, ownerId, petId, vetId, slotStart]
+              properties:
+                appointmentId: { type: string, format: uuid }
+                ownerId: { type: string, format: uuid }
+                petId: { type: string, format: uuid }
+                vetId: { type: string, format: uuid }
+                slotStart: { type: string, format: date-time }
+
+    AppointmentCancelledEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: "appointment.cancelled" }
+            payload:
+              type: object
+              required: [appointmentId, ownerId, reason]
+              properties:
+                appointmentId: { type: string, format: uuid }
+                ownerId: { type: string, format: uuid }
+                reason: { type: string }
+
+    AppointmentExpiredEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: "appointment.expired" }
+            payload:
+              type: object
+              required: [appointmentId, ownerId]
+              properties:
+                appointmentId: { type: string, format: uuid }
+                ownerId: { type: string, format: uuid }
+
+    BillingRefundRequestedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: "billing.refund.requested" }
+            payload:
+              type: object
+              required: [appointmentId, paymentId, reason]
+              properties:
+                appointmentId: { type: string, format: uuid }
+                paymentId: { type: string, format: uuid }
+                reason: { type: string, enum: [LATE_PAYMENT_AFTER_EXPIRY, USER_CANCELLED] }
+
+    MedicalRecordCreatedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            eventType: { const: "medical.record.created" }
+            payload:
+              type: object
+              required: [recordId, petId, ownerId, appointmentId, summary]
+              properties:
+                recordId: { type: string, format: uuid }
+                petId: { type: string, format: uuid }
+                ownerId: { type: string, format: uuid }
+                appointmentId: { type: string, format: uuid }
+                summary: { type: string }
