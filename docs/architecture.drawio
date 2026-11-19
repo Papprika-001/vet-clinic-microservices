@@ -1,0 +1,541 @@
+<mxfile host="65bd71144e">
+    <diagram id="arch-containers" name="1. Архитектура (Контейнеры)">
+        <mxGraphModel dx="559" dy="431" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" value="Архитектура микросервисной системы «Ветеринарная клиника» (Container View)" vertex="1">
+                    <mxGeometry height="35" width="920" x="40" y="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="client" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;" value="Веб / Мобильный клиент (Владелец, Врач, Админ)" vertex="1">
+                    <mxGeometry height="70" width="210" x="40" y="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gateway" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=12;" value="API Gateway (Kong Gateway) JWT, Routing, Rate Limit" vertex="1">
+                    <mxGeometry height="70" width="220" x="380" y="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="keycloak" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=12;" value="Keycloak (OAuth 2.0 / OIDC) Выдача и проверка JWT" vertex="1">
+                    <mxGeometry height="70" width="210" x="760" y="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="svc_catalog" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" value="clinic-catalog-service Врачи, филиалы, услуги, расписание" vertex="1">
+                    <mxGeometry height="85" width="210" x="40" y="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="svc_patient" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" value="patient-service Владельцы, питомцы, медкарты, прививки" vertex="1">
+                    <mxGeometry height="85" width="210" x="310" y="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="svc_appt" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" value="appointment-service Запись на приём, слоты, оркестратор Саги" vertex="1">
+                    <mxGeometry height="85" width="220" x="590" y="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="svc_billing" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" value="billing-service Счета, предоплата, возвраты (Refunds)" vertex="1">
+                    <mxGeometry height="85" width="210" x="890" y="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="svc_notif" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" value="notification-service Уведомления и напоминания" vertex="1">
+                    <mxGeometry height="85" width="210" x="1180" y="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_catalog" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="PostgreSQL catalog_db" vertex="1">
+                    <mxGeometry height="70" width="100" x="40" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis_catalog" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" value="Redis Кэш каталога" vertex="1">
+                    <mxGeometry height="70" width="95" x="155" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_patient" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="PostgreSQL patient_db" vertex="1">
+                    <mxGeometry height="70" width="100" x="310" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="minio" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" value="MinIO (S3) Снимки УЗИ/PDF" vertex="1">
+                    <mxGeometry height="70" width="100" x="425" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_appt" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="PostgreSQL appointment_db" vertex="1">
+                    <mxGeometry height="70" width="105" x="590" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis_appt" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" value="Redis Slot Hold TTL 15m" vertex="1">
+                    <mxGeometry height="70" width="100" x="710" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_billing" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="PostgreSQL billing_db" vertex="1">
+                    <mxGeometry height="70" width="105" x="945" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_notif" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="PostgreSQL notification_db" vertex="1">
+                    <mxGeometry height="70" width="105" x="1235" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="kafka" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontStyle=1;fontSize=12;" value="Apache Kafka (Event Bus) Топики: vet.payments | vet.appointments | vet.billing.commands | vet.medical" vertex="1">
+                    <mxGeometry height="65" width="1080" x="310" y="560" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_pay" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#36393d;dashed=1;fontStyle=1;fontSize=11;" value="Внешний платёжный шлюз (ЮKassa / CloudPayments) Оплата и Webhooks" vertex="1">
+                    <mxGeometry height="70" width="220" x="890" y="700" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext_sms" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#36393d;dashed=1;fontStyle=1;fontSize=11;" value="SMS / Email / Push провайдеры (SMS.ru, SMTP, FCM)" vertex="1">
+                    <mxGeometry height="70" width="220" x="1180" y="700" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_c_gw" edge="1" parent="1" source="client" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1a5276;fontColor=#1a5276;fontSize=10;" target="gateway" value="HTTPS / REST /api/v1/*">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_gw_kc" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1a5276;fontColor=#1a5276;fontSize=10;" target="keycloak" value="OIDC / JWKS Проверка JWT">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_gw_cat" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1a5276;fontColor=#1a5276;fontSize=10;" target="svc_catalog" value="REST /api/v1/catalog/*">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="430" y="190"/>
+                            <mxPoint x="145" y="190"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_gw_pat" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1a5276;fontColor=#1a5276;fontSize=10;" target="svc_patient" value="REST /api/v1/pets/*">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="460" y="200"/>
+                            <mxPoint x="415" y="200"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_gw_app" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1a5276;fontColor=#1a5276;fontSize=10;" target="svc_appt" value="REST /api/v1/appointments/*">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="510" y="200"/>
+                            <mxPoint x="700" y="200"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_gw_bil" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1a5276;fontColor=#1a5276;fontSize=10;" target="svc_billing" value="REST /api/v1/invoices/*">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="550" y="185"/>
+                            <mxPoint x="995" y="185"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_app_cat" edge="1" parent="1" source="svc_appt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#196f3d;fontColor=#196f3d;fontSize=10;fontStyle=1;" target="svc_catalog" value="gRPC: GetServiceAndVetSlot">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="660" y="225"/>
+                            <mxPoint x="180" y="225"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_app_pat" edge="1" parent="1" source="svc_appt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#196f3d;fontColor=#196f3d;fontSize=10;fontStyle=1;" target="svc_patient" value="gRPC: VerifyPetOwnership">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_app_bil" edge="1" parent="1" source="svc_appt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#196f3d;fontColor=#196f3d;fontSize=10;fontStyle=1;" target="svc_billing" value="gRPC: CreatePrepayment">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_pat_cat" edge="1" parent="1" source="svc_patient" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#196f3d;fontColor=#196f3d;fontSize=10;fontStyle=1;" target="svc_catalog" value="gRPC: GetVeterinarian">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_cat_db" edge="1" parent="1" source="svc_catalog" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#7d3c98;endArrow=classic;startArrow=classic;" target="db_catalog" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_cat_rd" edge="1" parent="1" source="svc_catalog" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#7d3c98;endArrow=classic;startArrow=classic;" target="redis_catalog" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_pat_db" edge="1" parent="1" source="svc_patient" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#7d3c98;endArrow=classic;startArrow=classic;" target="db_patient" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_pat_s3" edge="1" parent="1" source="svc_patient" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#7d3c98;endArrow=classic;startArrow=classic;" target="minio" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_app_db" edge="1" parent="1" source="svc_appt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#7d3c98;endArrow=classic;startArrow=classic;" target="db_appt" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_app_rd" edge="1" parent="1" source="svc_appt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#7d3c98;endArrow=classic;startArrow=classic;" target="redis_appt" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_bil_db" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#7d3c98;endArrow=classic;startArrow=classic;" target="db_billing" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="997.5" y="340" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_not_db" edge="1" parent="1" source="svc_notif" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;strokeColor=#7d3c98;endArrow=classic;startArrow=classic;" target="db_notif" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_bil_k" edge="1" parent="1" source="svc_billing" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;dashPattern=8 4;strokeColor=#b9770e;fontColor=#7e5109;fontSize=10;" target="kafka" value="pub: payment.completed payment.failed">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1080" y="515"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_k_app" edge="1" parent="1" source="svc_appt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;dashPattern=8 4;strokeColor=#b9770e;fontColor=#7e5109;fontSize=10;" target="kafka" value="sub: payment.completed / failed pub: appointment.*, refund.req">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="840" y="515"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_pat_k" edge="1" parent="1" source="svc_patient" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;dashPattern=8 4;strokeColor=#b9770e;fontColor=#7e5109;fontSize=10;" target="kafka" value="sub: appointment.confirmed pub: medical.record.created">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="550" y="515"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_k_not" edge="1" parent="1" source="kafka" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;dashPattern=8 4;strokeColor=#b9770e;fontColor=#7e5109;fontSize=10;" target="svc_notif" value="sub: appointment.* medical.record.created">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1370" y="515"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_bil_ext" edge="1" parent="1" source="svc_billing" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1a5276;fontColor=#1a5276;fontSize=10;" target="ext_pay" value="HTTPS API / Webhook">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1130" y="310"/>
+                            <mxPoint x="1130" y="735"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_not_ext" edge="1" parent="1" source="svc_notif" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1a5276;fontColor=#1a5276;fontSize=10;" target="ext_sms" value="HTTPS / SMTP">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1420" y="310"/>
+                            <mxPoint x="1420" y="735"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="seq-success" name="2. Sequence - Успешная запись">
+        <mxGraphModel dx="1432" dy="1104" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="seq_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" value="Диаграмма последовательности: Онлайн-запись на приём с предоплатой (Успешный путь)" vertex="1">
+                    <mxGeometry height="35" width="1300" x="40" y="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a_client" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="Клиент (Web / Mobile)" vertex="1">
+                    <mxGeometry height="50" width="140" x="40" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_client" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="110" y="120" as="sourcePoint"/>
+                        <mxPoint x="110" y="1064" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_gw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="API Gateway (Kong + JWT)" vertex="1">
+                    <mxGeometry height="50" width="140" x="215" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_gw" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="285" y="120" as="sourcePoint"/>
+                        <mxPoint x="285" y="1064" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_appt" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="appointment- service + Redis" vertex="1">
+                    <mxGeometry height="50" width="140" x="390" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_appt" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="120" as="sourcePoint"/>
+                        <mxPoint x="460" y="1064" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_pat" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="patient- service" vertex="1">
+                    <mxGeometry height="50" width="140" x="565" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_pat" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="635" y="120" as="sourcePoint"/>
+                        <mxPoint x="635" y="1064" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_cat" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="clinic-catalog- service" vertex="1">
+                    <mxGeometry height="50" width="140" x="740" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_cat" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="810" y="120" as="sourcePoint"/>
+                        <mxPoint x="810" y="1064" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_bil" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="billing- service" vertex="1">
+                    <mxGeometry height="50" width="140" x="915" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_bil" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="985" y="120" as="sourcePoint"/>
+                        <mxPoint x="985" y="1064" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_kafka" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="Apache Kafka" vertex="1">
+                    <mxGeometry height="50" width="140" x="1090" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_kafka" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="120" as="sourcePoint"/>
+                        <mxPoint x="1160" y="1064" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_notif" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="notification- service" vertex="1">
+                    <mxGeometry height="50" width="140" x="1265" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_notif" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1335" y="120" as="sourcePoint"/>
+                        <mxPoint x="1335" y="1064" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_0" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#1a5276;strokeWidth=2;fontSize=10;fontColor=#1a5276;" value="1. POST /api/v1/appointments (Idempotency-Key, JWT)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="110" y="150" as="sourcePoint"/>
+                        <mxPoint x="285" y="150" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_1" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#1a5276;strokeWidth=2;fontSize=10;fontColor=#1a5276;" value="2. Forward request (verified userId)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="285" y="200" as="sourcePoint"/>
+                        <mxPoint x="460" y="200" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_2" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#196f3d;strokeWidth=2;fontSize=10;fontColor=#196f3d;fontStyle=1;" value="3. gRPC VerifyPetOwnership(ownerId, petId)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="250" as="sourcePoint"/>
+                        <mxPoint x="635" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_3" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;strokeColor=#555555;strokeWidth=1.5;fontSize=10;fontColor=#333333;" value="4. OK (pet valid)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="635" y="300" as="sourcePoint"/>
+                        <mxPoint x="460" y="300" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_4" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#196f3d;strokeWidth=2;fontSize=10;fontColor=#196f3d;fontStyle=1;" value="5. gRPC GetServiceAndVetSlot(vetId, serviceId, slot)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="350" as="sourcePoint"/>
+                        <mxPoint x="810" y="350" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_5" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;strokeColor=#555555;strokeWidth=1.5;fontSize=10;fontColor=#333333;" value="6. OK (price=2500 RUB, duration=30m)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="810" y="400" as="sourcePoint"/>
+                        <mxPoint x="460" y="400" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f8f5;strokeColor=#16a085;fontSize=9;" value="7. Redis SET NX TTL 15m + DB PENDING_PAYMENT" vertex="1">
+                    <mxGeometry height="30" width="130" x="395" y="436" as="geometry"/>
+                </mxCell>
+                <mxCell id="m_7" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#196f3d;strokeWidth=2;fontSize=10;fontColor=#196f3d;fontStyle=1;" value="8. gRPC CreatePrepayment(apptId, 2500 RUB, Idempotency-Key)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="500" as="sourcePoint"/>
+                        <mxPoint x="985" y="500" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_8" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;strokeColor=#555555;strokeWidth=1.5;fontSize=10;fontColor=#333333;" value="9. OK (paymentId, paymentUrl)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="985" y="550" as="sourcePoint"/>
+                        <mxPoint x="460" y="550" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_9" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;strokeColor=#555555;strokeWidth=1.5;fontSize=10;fontColor=#333333;" value="10. 201 Created (status=PENDING_PAYMENT, paymentUrl)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="600" as="sourcePoint"/>
+                        <mxPoint x="110" y="600" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_10" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#1a5276;strokeWidth=2;fontSize=10;fontColor=#1a5276;" value="11. Оплата на шлюзе → Webhook payment succeeded">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="110" y="650" as="sourcePoint"/>
+                        <mxPoint x="985" y="650" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_11" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="12. publish vet.payments: payment.completed">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="985" y="700" as="sourcePoint"/>
+                        <mxPoint x="1160" y="700" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_12" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="13. consume payment.completed (check eventId)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="750" as="sourcePoint"/>
+                        <mxPoint x="460" y="750" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f8f5;strokeColor=#16a085;fontSize=9;" value="14. DB status=CONFIRMED, release Redis TTL" vertex="1">
+                    <mxGeometry height="30" width="130" x="395" y="786" as="geometry"/>
+                </mxCell>
+                <mxCell id="m_14" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="15. publish vet.appointments: appointment.confirmed">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="850" as="sourcePoint"/>
+                        <mxPoint x="1160" y="850" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_15" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="16. consume appointment.confirmed → SMS/Email">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="900" as="sourcePoint"/>
+                        <mxPoint x="1335" y="900" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_16" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="17. consume appointment.confirmed → черновик визита">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="950" as="sourcePoint"/>
+                        <mxPoint x="635" y="950" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="seq-failure" name="3. Sequence - Сбой и Сага">
+        <mxGraphModel dx="1407" dy="1084" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="seq_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" value="Диаграмма последовательности: Сценарии сбоя и компенсирующие действия (Паттерн Сага)" vertex="1">
+                    <mxGeometry height="35" width="1300" x="40" y="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a_client" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="Клиент (Web / Mobile)" vertex="1">
+                    <mxGeometry height="50" width="140" x="40" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_client" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="110" y="120" as="sourcePoint"/>
+                        <mxPoint x="110" y="1012" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_gw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="API Gateway (Kong + JWT)" vertex="1">
+                    <mxGeometry height="50" width="140" x="215" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_gw" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="285" y="120" as="sourcePoint"/>
+                        <mxPoint x="285" y="1012" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_appt" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="appointment- service + Redis" vertex="1">
+                    <mxGeometry height="50" width="140" x="390" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_appt" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="120" as="sourcePoint"/>
+                        <mxPoint x="460" y="1012" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_pat" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="patient- service" vertex="1">
+                    <mxGeometry height="50" width="140" x="565" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_pat" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="635" y="120" as="sourcePoint"/>
+                        <mxPoint x="635" y="1012" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_cat" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="clinic-catalog- service" vertex="1">
+                    <mxGeometry height="50" width="140" x="740" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_cat" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="810" y="120" as="sourcePoint"/>
+                        <mxPoint x="810" y="1012" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_bil" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="billing- service" vertex="1">
+                    <mxGeometry height="50" width="140" x="915" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_bil" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="985" y="120" as="sourcePoint"/>
+                        <mxPoint x="985" y="1012" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_kafka" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="Apache Kafka" vertex="1">
+                    <mxGeometry height="50" width="140" x="1090" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_kafka" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="120" as="sourcePoint"/>
+                        <mxPoint x="1160" y="1012" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a_notif" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" value="notification- service" vertex="1">
+                    <mxGeometry height="50" width="140" x="1265" y="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_notif" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1.5;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1335" y="120" as="sourcePoint"/>
+                        <mxPoint x="1335" y="1012" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_0" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;align=left;spacingLeft=10;" value="Сценарий A: Оплата отклонена платёжным шлюзом (компенсация слота)" vertex="1">
+                    <mxGeometry height="32" width="1365" x="40" y="138" as="geometry"/>
+                </mxCell>
+                <mxCell id="m_1" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#1a5276;strokeWidth=2;fontSize=10;fontColor=#1a5276;" value="1. Запись создана в статусе PENDING_PAYMENT (Redis TTL 15 мин)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="110" y="200" as="sourcePoint"/>
+                        <mxPoint x="460" y="200" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_2" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#c0392b;strokeWidth=2;fontSize=10;fontColor=#c0392b;fontStyle=1;" value="2. Webhook failed → publish vet.payments: payment.failed">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="985" y="250" as="sourcePoint"/>
+                        <mxPoint x="1160" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_3" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#c0392b;strokeWidth=2;fontSize=10;fontColor=#c0392b;fontStyle=1;" value="3. consume payment.failed">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="300" as="sourcePoint"/>
+                        <mxPoint x="460" y="300" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f8f5;strokeColor=#16a085;fontSize=9;" value="4. Компенсация: DB status=CANCELLED, DEL Redis slot lock" vertex="1">
+                    <mxGeometry height="30" width="130" x="395" y="336" as="geometry"/>
+                </mxCell>
+                <mxCell id="m_5" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="5. publish vet.appointments: appointment.cancelled">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="400" as="sourcePoint"/>
+                        <mxPoint x="1160" y="400" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_6" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="6. consume appointment.cancelled → SMS об отмене записи">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="450" as="sourcePoint"/>
+                        <mxPoint x="1335" y="450" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;align=left;spacingLeft=10;" value="Сценарий B: Оплата пришла ПОСЛЕ истечения 15 мин (компенсирующий возврат средств)" vertex="1">
+                    <mxGeometry height="32" width="1365" x="40" y="488" as="geometry"/>
+                </mxCell>
+                <mxCell id="m_8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f8f5;strokeColor=#16a085;fontSize=9;" value="7. Scheduler: TTL истёк → DB status=EXPIRED" vertex="1">
+                    <mxGeometry height="30" width="130" x="395" y="536" as="geometry"/>
+                </mxCell>
+                <mxCell id="m_9" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="8. publish vet.appointments: appointment.expired">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="600" as="sourcePoint"/>
+                        <mxPoint x="1160" y="600" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_10" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="9. Поздний webhook → publish vet.payments: payment.completed">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="985" y="650" as="sourcePoint"/>
+                        <mxPoint x="1160" y="650" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_11" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#c0392b;strokeWidth=2;fontSize=10;fontColor=#c0392b;fontStyle=1;" value="10. consume payment.completed (видит статус EXPIRED!)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="700" as="sourcePoint"/>
+                        <mxPoint x="460" y="700" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_12" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#c0392b;strokeWidth=2;fontSize=10;fontColor=#c0392b;fontStyle=1;" value="11. Компенсация: publish vet.billing.commands: billing.refund.requested">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="460" y="750" as="sourcePoint"/>
+                        <mxPoint x="1160" y="750" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_13" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#c0392b;strokeWidth=2;fontSize=10;fontColor=#c0392b;fontStyle=1;" value="12. consume billing.refund.requested → Refund через шлюз">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="800" as="sourcePoint"/>
+                        <mxPoint x="985" y="800" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_14" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="13. publish vet.payments: payment.refunded">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="985" y="850" as="sourcePoint"/>
+                        <mxPoint x="1160" y="850" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_15" edge="1" parent="1" style="endArrow=open;dashed=1;dashPattern=8 4;html=1;strokeColor=#b9770e;strokeWidth=2;fontSize=10;fontColor=#7e5109;" value="14. consume payment.refunded → уведомление о возврате денег">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1160" y="900" as="sourcePoint"/>
+                        <mxPoint x="1335" y="900" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
