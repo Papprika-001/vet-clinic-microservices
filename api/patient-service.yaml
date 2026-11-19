@@ -1,0 +1,505 @@
+openapi: 3.1.0
+info:
+  title: patient-service
+  version: 1.0.0
+  description: 'Сервис пациентов и медицинских карт: владельцы, питомцы, история визитов, диагнозы, вакцинация и диагностические
+    файлы.
+
+    Хранилище: PostgreSQL (`patient_db`) + MinIO S3 (рентген-снимки, УЗИ, PDF-анализы).
+
+    '
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://api.vetclinic.ru
+  description: Production API Gateway (Kong)
+security:
+- bearerAuth: []
+tags:
+- name: public
+  description: Внешние эндпоинты через API Gateway
+- name: internal
+  description: Внутренние межсервисные эндпоинты (gRPC — api/proto/patient.proto)
+paths:
+  /api/v1/pets:
+    get:
+      tags:
+      - public
+      summary: Получить список питомцев текущего владельца
+      operationId: listPets
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Список питомцев
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetPage'
+              example:
+                items:
+                - id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  ownerId: a1b2c3d4-1111-2222-3333-444455556666
+                  name: Барсик
+                  species: CAT
+                  breed: Британская короткошёрстная
+                  birthDate: '2022-04-15'
+                  weightKg: 4.8
+                  microchipNumber: '643094100123456'
+                page: 0
+                size: 20
+                totalElements: 1
+                totalPages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - public
+      summary: Зарегистрировать нового питомца
+      operationId: createPet
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePetRequest'
+            example:
+              name: Барсик
+              species: CAT
+              breed: Британская короткошёрстная
+              birthDate: '2022-04-15'
+              weightKg: 4.8
+              allergies: Нет
+      responses:
+        '201':
+          description: Карточка питомца создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/pets/{petId}/medical-records:
+    get:
+      tags:
+      - public
+      summary: Получить историю медицинских записей питомца
+      operationId: listMedicalRecords
+      parameters:
+      - name: petId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Постраничная история посещений и диагнозов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecordPage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - public
+      summary: Добавить медицинскую запись по итогам приёма (только роль VET)
+      operationId: createMedicalRecord
+      parameters:
+      - name: petId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMedicalRecordRequest'
+            example:
+              appointmentId: 9a4d1e2c-6b7f-4a08-b3c5-0e1f2d3c4b5a
+              vetId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              diagnosis: Острый гастрит лёгкой степени
+              prescription: Диета Gastro Intestinal 14 дней, Энтеросгель 2 раза/день
+              attachmentUrls:
+              - https://minio.vetclinic.ru/diagnostics/usg-2026-11-25.pdf
+      responses:
+        '201':
+          description: Запись добавлена в медкарту (публикуется событие medical.record.created)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /internal/v1/pets/{petId}/verify:
+    get:
+      tags:
+      - internal
+      summary: '[gRPC: VerifyPetOwnership] Проверить существование питомца и его владельца'
+      operationId: verifyPetInternal
+      parameters:
+      - name: petId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: ownerId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Результат проверки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetVerificationResponse'
+              example:
+                exists: true
+                belongsToOwner: true
+                petName: Барсик
+                species: CAT
+        '404':
+          $ref: '#/components/responses/NotFound'
+webhooks:
+  medicalRecordCreated:
+    post:
+      tags:
+      - internal
+      operationId: onMedicalRecordCreatedEvent
+      summary: 'Событие Kafka (vet.medical): добавлена запись в медкарту'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalRecordCreatedEvent'
+      responses:
+        '200':
+          description: Событие обработано подписчиком
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Уникальный ключ идемпотентности операции (UUID v4)
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    SizeParam:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Ошибка валидации запроса
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Требуется валидный JWT-токен
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Недостаточно прав доступа
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Питомец или запись не найдены
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    CreatePetRequest:
+      type: object
+      required:
+      - name
+      - species
+      properties:
+        name:
+          type: string
+        species:
+          type: string
+          enum:
+          - DOG
+          - CAT
+          - BIRD
+          - RODENT
+          - REPTILE
+          - OTHER
+        breed:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        weightKg:
+          type: number
+          format: double
+        allergies:
+          type: string
+        microchipNumber:
+          type: string
+    Pet:
+      type: object
+      required:
+      - id
+      - ownerId
+      - name
+      - species
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        species:
+          type: string
+          enum:
+          - DOG
+          - CAT
+          - BIRD
+          - RODENT
+          - REPTILE
+          - OTHER
+        breed:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        weightKg:
+          type: number
+          format: double
+        microchipNumber:
+          type: string
+    PetPage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pet'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+    CreateMedicalRecordRequest:
+      type: object
+      required:
+      - appointmentId
+      - vetId
+      - diagnosis
+      properties:
+        appointmentId:
+          type: string
+          format: uuid
+        vetId:
+          type: string
+          format: uuid
+        diagnosis:
+          type: string
+        prescription:
+          type: string
+        attachmentUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+    MedicalRecord:
+      type: object
+      required:
+      - id
+      - petId
+      - appointmentId
+      - vetId
+      - diagnosis
+      - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        petId:
+          type: string
+          format: uuid
+        appointmentId:
+          type: string
+          format: uuid
+        vetId:
+          type: string
+          format: uuid
+        vetFullName:
+          type: string
+        diagnosis:
+          type: string
+        prescription:
+          type: string
+        attachmentUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        createdAt:
+          type: string
+          format: date-time
+    MedicalRecordPage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalRecord'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+    PetVerificationResponse:
+      type: object
+      required:
+      - exists
+      - belongsToOwner
+      properties:
+        exists:
+          type: boolean
+        belongsToOwner:
+          type: boolean
+        petName:
+          type: string
+        species:
+          type: string
+    MedicalRecordCreatedEvent:
+      type: object
+      description: 'Kafka топик: vet.medical | Издатель: patient-service | Подписчик: notification-service'
+      required:
+      - eventId
+      - eventType
+      - schemaVersion
+      - occurredAt
+      - correlationId
+      - payload
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum:
+          - medical.record.created
+        schemaVersion:
+          type: integer
+          example: 1
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+        payload:
+          type: object
+          required:
+          - recordId
+          - petId
+          - ownerId
+          - appointmentId
+          - summary
+          properties:
+            recordId:
+              type: string
+              format: uuid
+            petId:
+              type: string
+              format: uuid
+            ownerId:
+              type: string
+              format: uuid
+            appointmentId:
+              type: string
+              format: uuid
+            summary:
+              type: string
+    Problem:
+      type: object
+      description: Единая модель ошибок RFC 9457 (application/problem+json)
+      required:
+      - type
+      - title
+      - status
+      - detail
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        traceId:
+          type: string
+          format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-токен, выданный Keycloak (OAuth 2.0 / OIDC)

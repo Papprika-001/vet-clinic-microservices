@@ -1,0 +1,236 @@
+openapi: 3.1.0
+info:
+  title: notification-service
+  version: 1.0.0
+  description: 'Сервис уведомлений и напоминаний (SMS, Email, Push).
+
+    Основной режим работы — асинхронное потребление событий из Apache Kafka (`vet.appointments`, `vet.medical`, `vet.payments`).
+
+    Хранилище: PostgreSQL (`notification_db`, с JSONB для параметров шаблонов и журнала доставки).
+
+    '
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://api.vetclinic.ru
+  description: Production API Gateway (Kong)
+security:
+- bearerAuth: []
+tags:
+- name: public
+  description: Внешние эндпоинты через API Gateway
+- name: internal
+  description: Внутренние служебные эндпоинты
+paths:
+  /api/v1/notifications:
+    get:
+      tags:
+      - public
+      summary: Получить историю уведомлений текущего пользователя
+      operationId: listNotifications
+      parameters:
+      - name: channel
+        in: query
+        schema:
+          type: string
+          enum:
+          - SMS
+          - EMAIL
+          - PUSH
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Постраничная история отправок
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+              example:
+                items:
+                - id: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                  recipientId: a1b2c3d4-1111-2222-3333-444455556666
+                  channel: SMS
+                  templateCode: APPOINTMENT_CONFIRMED
+                  status: DELIVERED
+                  sentAt: '2026-11-19T12:05:11Z'
+                page: 0
+                size: 20
+                totalElements: 1
+                totalPages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /internal/v1/notifications/send:
+    post:
+      tags:
+      - internal
+      summary: Служебная отправка экстренного уведомления
+      operationId: sendNotificationInternal
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendNotificationRequest'
+            example:
+              recipientId: a1b2c3d4-1111-2222-3333-444455556666
+              channel: EMAIL
+              templateCode: MANUAL_CLINIC_NOTICE
+              variables:
+                petName: Барсик
+                message: Просим прийти за 10 минут до приёма
+      responses:
+        '202':
+          description: Уведомление принято в очередь на отправку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    SizeParam:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Некорректные параметры
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Требуется авторизация
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    SendNotificationRequest:
+      type: object
+      required:
+      - recipientId
+      - channel
+      - templateCode
+      properties:
+        recipientId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum:
+          - SMS
+          - EMAIL
+          - PUSH
+        templateCode:
+          type: string
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+    NotificationRecord:
+      type: object
+      required:
+      - id
+      - recipientId
+      - channel
+      - templateCode
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipientId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum:
+          - SMS
+          - EMAIL
+          - PUSH
+        templateCode:
+          type: string
+        status:
+          type: string
+          enum:
+          - QUEUED
+          - SENT
+          - DELIVERED
+          - FAILED
+        sentAt:
+          type: string
+          format: date-time
+    NotificationPage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationRecord'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+    Problem:
+      type: object
+      description: Единая модель ошибок RFC 9457 (application/problem+json)
+      required:
+      - type
+      - title
+      - status
+      - detail
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        traceId:
+          type: string
+          format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-токен, выданный Keycloak (OAuth 2.0 / OIDC)

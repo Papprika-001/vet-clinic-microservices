@@ -1,0 +1,445 @@
+openapi: 3.1.0
+info:
+  title: clinic-catalog-service
+  version: 1.0.0
+  description: 'Сервис справочника ветеринарной клиники: филиалы, ветеринары, прайс-лист услуг и расписание работы.
+
+    Хранилище: PostgreSQL (`catalog_db`) + Redis (кэш справочников).
+
+    Внутренние вызовы между микросервисами выполняются по gRPC (`api/proto/clinic_catalog.proto`),
+
+    а также продублированы в разделе `internal` для отладки и единого реестра контрактов.
+
+    '
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://api.vetclinic.ru
+  description: Production API Gateway (Kong)
+security:
+- bearerAuth: []
+tags:
+- name: public
+  description: Внешние эндпоинты для клиентов через API Gateway
+- name: internal
+  description: Внутренние межсервисные эндпоинты (соответствуют gRPC-методам)
+paths:
+  /api/v1/catalog/services:
+    get:
+      tags:
+      - public
+      summary: Получить список ветеринарных услуг (прайс-лист)
+      operationId: listServices
+      parameters:
+      - name: branchId
+        in: query
+        description: Фильтр по идентификатору филиала
+        schema:
+          type: string
+          format: uuid
+      - name: category
+        in: query
+        description: Категория услуги
+        schema:
+          type: string
+          enum:
+          - CONSULTATION
+          - VACCINATION
+          - SURGERY
+          - DIAGNOSTICS
+          - GROOMING
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Постраничный список услуг
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceItemPage'
+              example:
+                items:
+                - id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                  name: Первичный приём терапевта
+                  category: CONSULTATION
+                  durationMinutes: 30
+                  price: 2500.0
+                  currency: RUB
+                  prepaymentRequired: true
+                page: 0
+                size: 20
+                totalElements: 1
+                totalPages: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/catalog/veterinarians:
+    get:
+      tags:
+      - public
+      summary: Получить список ветеринаров
+      operationId: listVeterinarians
+      parameters:
+      - name: branchId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: specialization
+        in: query
+        schema:
+          type: string
+          example: THERAPIST
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Постраничный список ветеринаров
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VeterinarianPage'
+              example:
+                items:
+                - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  fullName: Смирнова Елена Викторовна
+                  specialization: THERAPIST
+                  branchId: 11111111-2222-3333-4444-555555555555
+                  experienceYears: 9
+                page: 0
+                size: 20
+                totalElements: 1
+                totalPages: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/catalog/veterinarians/{vetId}/schedule:
+    get:
+      tags:
+      - public
+      summary: Получить рабочие слоты ветеринара на дату
+      operationId: getVetSchedule
+      parameters:
+      - name: vetId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: date
+        in: query
+        required: true
+        description: Дата в формате YYYY-MM-DD
+        schema:
+          type: string
+          format: date
+          example: '2026-11-25'
+      responses:
+        '200':
+          description: Рабочие интервалы врача
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VetSchedule'
+              example:
+                vetId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                date: '2026-11-25'
+                slots:
+                - startTime: '2026-11-25T10:00:00Z'
+                  endTime: '2026-11-25T10:30:00Z'
+                - startTime: '2026-11-25T10:30:00Z'
+                  endTime: '2026-11-25T11:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /internal/v1/catalog/validate-slot:
+    get:
+      tags:
+      - internal
+      summary: '[gRPC: GetServiceAndVetSlot] Проверить график врача и получить цену услуги'
+      operationId: validateSlotInternal
+      parameters:
+      - name: vetId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: serviceId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: slotStart
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '200':
+          description: Результат проверки слота и расчёт цены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlotValidationResponse'
+              example:
+                valid: true
+                vetId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                serviceId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                price: 2500.0
+                currency: RUB
+                durationMinutes: 30
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /internal/v1/catalog/veterinarians/{vetId}:
+    get:
+      tags:
+      - internal
+      summary: '[gRPC: GetVeterinarian] Получить карточку врача для медкарты'
+      operationId: getVeterinarianInternal
+      parameters:
+      - name: vetId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Данные ветеринара
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Veterinarian'
+              example:
+                id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                fullName: Смирнова Елена Викторовна
+                specialization: THERAPIST
+                branchId: 11111111-2222-3333-4444-555555555555
+                experienceYears: 9
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Номер страницы (с 0)
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    SizeParam:
+      name: size
+      in: query
+      description: Размер страницы
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Некорректные параметры запроса
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    ServiceItem:
+      type: object
+      required:
+      - id
+      - name
+      - category
+      - durationMinutes
+      - price
+      - currency
+      - prepaymentRequired
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          type: string
+          enum:
+          - CONSULTATION
+          - VACCINATION
+          - SURGERY
+          - DIAGNOSTICS
+          - GROOMING
+        durationMinutes:
+          type: integer
+          minimum: 10
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: RUB
+        prepaymentRequired:
+          type: boolean
+    ServiceItemPage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceItem'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+    Veterinarian:
+      type: object
+      required:
+      - id
+      - fullName
+      - specialization
+      - branchId
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        specialization:
+          type: string
+        branchId:
+          type: string
+          format: uuid
+        experienceYears:
+          type: integer
+    VeterinarianPage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Veterinarian'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+    VetSchedule:
+      type: object
+      required:
+      - vetId
+      - date
+      - slots
+      properties:
+        vetId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        slots:
+          type: array
+          items:
+            type: object
+            required:
+            - startTime
+            - endTime
+            properties:
+              startTime:
+                type: string
+                format: date-time
+              endTime:
+                type: string
+                format: date-time
+    SlotValidationResponse:
+      type: object
+      required:
+      - valid
+      - vetId
+      - serviceId
+      - price
+      - currency
+      - durationMinutes
+      properties:
+        valid:
+          type: boolean
+        vetId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+        durationMinutes:
+          type: integer
+    Problem:
+      type: object
+      description: Единая модель ошибок RFC 9457 (application/problem+json)
+      required:
+      - type
+      - title
+      - status
+      - detail
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://vetclinic.ru/errors/not-found
+        title:
+          type: string
+          example: Ресурс не найден
+        status:
+          type: integer
+          example: 404
+        detail:
+          type: string
+          example: Ветеринар с указанным ID не найден
+        instance:
+          type: string
+          example: /api/v1/catalog/veterinarians/3fa85f64-5717-4562-b3fc-2c963f66afa6
+        traceId:
+          type: string
+          format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-токен, выданный Keycloak (OAuth 2.0 / OIDC)

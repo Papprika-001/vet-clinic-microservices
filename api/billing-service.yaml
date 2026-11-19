@@ -1,0 +1,426 @@
+openapi: 3.1.0
+info:
+  title: billing-service
+  version: 1.0.0
+  description: 'Финансовый сервис: выставление счетов, предоплата онлайн, интеграция с внешним платёжным шлюзом,
+
+    обработка вебхуков и выполнение возвратов (Refunds).
+
+    Хранилище: PostgreSQL (`billing_db`).
+
+    '
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://api.vetclinic.ru
+  description: Production API Gateway (Kong)
+security:
+- bearerAuth: []
+tags:
+- name: public
+  description: Внешние эндпоинты через API Gateway
+- name: internal
+  description: Внутренние межсервисные эндпоинты (gRPC — api/proto/billing.proto)
+paths:
+  /api/v1/invoices:
+    get:
+      tags:
+      - public
+      summary: Получить список счетов текущего клиента
+      operationId: listInvoices
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - PENDING
+          - PAID
+          - FAILED
+          - REFUNDED
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Постраничный список счетов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoicePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/invoices/{invoiceId}:
+    get:
+      tags:
+      - public
+      summary: Получить детали счёта и чек
+      operationId: getInvoice
+      parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Детали счёта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/payments/webhook:
+    post:
+      tags:
+      - public
+      summary: Принять уведомление (webhook) от внешнего платёжного шлюза
+      operationId: handlePaymentWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentWebhookPayload'
+            example:
+              externalPaymentId: yk_2e9f8a1b7c3d
+              paymentId: b2e0c7f4-1a93-4f0d-8c6e-7d25a1e9f310
+              status: SUCCEEDED
+              amount: 2500.0
+              currency: RUB
+              signature: sha256=9f86d081884c7d659a2feaa0c55ad015
+      responses:
+        '200':
+          description: Вебхук принят, событие опубликовано в Kafka (vet.payments)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Неверная криптографическая подпись вебхука
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - webhookSignature: []
+  /internal/v1/payments:
+    post:
+      tags:
+      - internal
+      summary: '[gRPC: CreatePrepayment] Создать счёт и инициировать предоплату'
+      operationId: createPrepaymentInternal
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+            example:
+              appointmentId: 9a4d1e2c-6b7f-4a08-b3c5-0e1f2d3c4b5a
+              ownerId: a1b2c3d4-1111-2222-3333-444455556666
+              amount: 2500.0
+              currency: RUB
+              description: 'Предоплата: Первичный приём терапевта'
+      responses:
+        '201':
+          description: Платёж создан, возвращена ссылка на форму оплаты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+              example:
+                paymentId: b2e0c7f4-1a93-4f0d-8c6e-7d25a1e9f310
+                invoiceId: d4c3b2a1-5555-6666-7777-888899990000
+                status: PENDING
+                paymentUrl: https://pay.vetclinic.ru/pay/b2e0c7f4
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '502':
+          description: Ошибка взаимодействия с внешним платёжным шлюзом
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+webhooks:
+  paymentCompleted:
+    post:
+      tags:
+      - internal
+      operationId: onPaymentCompletedEvent
+      summary: 'Событие Kafka (vet.payments): оплата успешно завершена'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCompletedEvent'
+      responses:
+        '200':
+          description: Событие обработано подписчиком
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    SizeParam:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Неавторизованный доступ
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Счёт или платёж не найдены
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    CreatePaymentRequest:
+      type: object
+      required:
+      - appointmentId
+      - ownerId
+      - amount
+      - currency
+      properties:
+        appointmentId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 1
+        currency:
+          type: string
+          example: RUB
+        description:
+          type: string
+    PaymentResponse:
+      type: object
+      required:
+      - paymentId
+      - invoiceId
+      - status
+      - paymentUrl
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+        invoiceId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - PENDING
+          - SUCCEEDED
+          - FAILED
+          - REFUNDED
+        paymentUrl:
+          type: string
+          format: uri
+    Invoice:
+      type: object
+      required:
+      - id
+      - appointmentId
+      - ownerId
+      - amount
+      - currency
+      - status
+      - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        appointmentId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+          - PENDING
+          - PAID
+          - FAILED
+          - REFUNDED
+        createdAt:
+          type: string
+          format: date-time
+    InvoicePage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+    PaymentWebhookPayload:
+      type: object
+      required:
+      - externalPaymentId
+      - paymentId
+      - status
+      - amount
+      - currency
+      - signature
+      properties:
+        externalPaymentId:
+          type: string
+        paymentId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - SUCCEEDED
+          - FAILED
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        signature:
+          type: string
+    PaymentCompletedEvent:
+      type: object
+      description: 'Kafka топик: vet.payments | Издатель: billing-service | Подписчик: appointment-service'
+      required:
+      - eventId
+      - eventType
+      - schemaVersion
+      - occurredAt
+      - correlationId
+      - payload
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum:
+          - payment.completed
+        schemaVersion:
+          type: integer
+          example: 1
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+        payload:
+          type: object
+          required:
+          - paymentId
+          - appointmentId
+          - amount
+          - currency
+          properties:
+            paymentId:
+              type: string
+              format: uuid
+            appointmentId:
+              type: string
+              format: uuid
+            amount:
+              type: number
+              format: double
+            currency:
+              type: string
+    Problem:
+      type: object
+      description: Единая модель ошибок RFC 9457 (application/problem+json)
+      required:
+      - type
+      - title
+      - status
+      - detail
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        traceId:
+          type: string
+          format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-токен, выданный Keycloak (OAuth 2.0 / OIDC)
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Webhook-Signature
+      description: HMAC-SHA256 подпись от внешнего платёжного шлюза
