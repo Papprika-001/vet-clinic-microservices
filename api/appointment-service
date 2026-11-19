@@ -1,0 +1,497 @@
+openapi: 3.1.0
+info:
+  title: appointment-service
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://api.vetclinic.ru
+  description: Production API Gateway (Kong)
+security:
+- bearerAuth: []
+tags:
+- name: public
+  description: Внешние эндпоинты через API Gateway
+- name: internal
+  description: Внутренние межсервисные эндпоинты
+paths:
+  /api/v1/appointments:
+    get:
+      tags:
+      - public
+      summary: Получить список записей текущего пользователя
+      operationId: listAppointments
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - PENDING_PAYMENT
+          - CONFIRMED
+          - COMPLETED
+          - CANCELLED
+          - EXPIRED
+      - name: petId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Постраничный список записей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - public
+      summary: Создать запись на приём и удержать слот на 15 минут
+      operationId: createAppointment
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppointmentRequest'
+            example:
+              petId: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              vetId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              serviceId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+              slotStart: '2026-11-25T10:00:00Z'
+              notes: Кот стал меньше есть последние два дня
+      responses:
+        '201':
+          description: Запись создана, слот удержан, ожидается предоплата
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+              example:
+                id: 9a4d1e2c-6b7f-4a08-b3c5-0e1f2d3c4b5a
+                ownerId: a1b2c3d4-1111-2222-3333-444455556666
+                petId: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                vetId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                serviceId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                slotStart: '2026-11-25T10:00:00Z'
+                slotEnd: '2026-11-25T10:30:00Z'
+                status: PENDING_PAYMENT
+                price: 2500.0
+                currency: RUB
+                paymentUrl: https://pay.vetclinic.ru/pay/b2e0c7f4
+                expiresAt: '2026-11-19T12:15:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Выбранный слот врача уже занят или удерживается другим клиентом
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: https://vetclinic.ru/errors/slot-conflict
+                title: Слот уже занят
+                status: 409
+                detail: Слот 2026-11-25T10:00:00Z у выбранного ветеринара уже забронирован.
+        '503':
+          description: Временная недоступность платёжного сервиса (слот автоматически освобождён)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/appointments/{appointmentId}:
+    get:
+      tags:
+      - public
+      summary: Получить детали конкретной записи
+      operationId: getAppointment
+      parameters:
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Детали записи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/appointments/{appointmentId}/cancel:
+    post:
+      tags:
+      - public
+      summary: Отменить запись на приём (с запуском возврата, если она была оплачена)
+      operationId: cancelAppointment
+      parameters:
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Изменились планы
+      responses:
+        '200':
+          description: Запись отменена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Невозможно отменить уже завершённый визит
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /internal/v1/appointments/{appointmentId}:
+    get:
+      tags:
+      - internal
+      summary: Получить метаданные записи для других сервисов
+      operationId: getAppointmentInternal
+      parameters:
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Метаданные записи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+webhooks:
+  appointmentConfirmed:
+    post:
+      tags:
+      - internal
+      operationId: onAppointmentConfirmedEvent
+      summary: 'Событие Kafka (vet.appointments): запись подтверждена'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentConfirmedEvent'
+      responses:
+        '200':
+          description: Событие обработано подписчиком
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  billingRefundRequested:
+    post:
+      tags:
+      - internal
+      operationId: onBillingRefundRequestedCommand
+      summary: 'Команда Kafka (vet.billing.commands): запрос возврата средств'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingRefundRequestedCommand'
+      responses:
+        '200':
+          description: Команда принята к исполнению
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    SizeParam:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Некорректные данные запроса
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Требуется авторизация
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Запись, питомец или врач не найдены
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    CreateAppointmentRequest:
+      type: object
+      required:
+      - petId
+      - vetId
+      - serviceId
+      - slotStart
+      properties:
+        petId:
+          type: string
+          format: uuid
+        vetId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        slotStart:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          maxLength: 500
+    Appointment:
+      type: object
+      required:
+      - id
+      - ownerId
+      - petId
+      - vetId
+      - serviceId
+      - slotStart
+      - slotEnd
+      - status
+      - price
+      - currency
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        petId:
+          type: string
+          format: uuid
+        vetId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        slotStart:
+          type: string
+          format: date-time
+        slotEnd:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+          - PENDING_PAYMENT
+          - CONFIRMED
+          - COMPLETED
+          - CANCELLED
+          - EXPIRED
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: RUB
+        paymentUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+    AppointmentPage:
+      type: object
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Appointment'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+    AppointmentConfirmedEvent:
+      type: object
+      description: 'Kafka топик: vet.appointments | Издатель: appointment-service | Подписчики: notification-service, patient-service'
+      required:
+      - eventId
+      - eventType
+      - schemaVersion
+      - occurredAt
+      - correlationId
+      - payload
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum:
+          - appointment.confirmed
+        schemaVersion:
+          type: integer
+          example: 1
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+        payload:
+          type: object
+          required:
+          - appointmentId
+          - ownerId
+          - petId
+          - vetId
+          - slotStart
+          properties:
+            appointmentId:
+              type: string
+              format: uuid
+            ownerId:
+              type: string
+              format: uuid
+            petId:
+              type: string
+              format: uuid
+            vetId:
+              type: string
+              format: uuid
+            slotStart:
+              type: string
+              format: date-time
+    BillingRefundRequestedCommand:
+      type: object
+      description: 'Kafka топик: vet.billing.commands | Издатель: appointment-service | Подписчик: billing-service'
+      required:
+      - eventId
+      - eventType
+      - schemaVersion
+      - occurredAt
+      - correlationId
+      - payload
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum:
+          - billing.refund.requested
+        schemaVersion:
+          type: integer
+          example: 1
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+        payload:
+          type: object
+          required:
+          - appointmentId
+          - paymentId
+          - reason
+          properties:
+            appointmentId:
+              type: string
+              format: uuid
+            paymentId:
+              type: string
+              format: uuid
+            reason:
+              type: string
+              enum:
+              - LATE_PAYMENT_AFTER_EXPIRY
+              - USER_CANCELLED
+    Problem:
+      type: object
+      description: Единая модель ошибок RFC 9457 (application/problem+json)
+      required:
+      - type
+      - title
+      - status
+      - detail
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        traceId:
+          type: string
+          format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-токен, выданный Keycloak (OAuth 2.0 / OIDC)
