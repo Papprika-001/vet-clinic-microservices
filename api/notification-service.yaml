@@ -2,13 +2,6 @@ openapi: 3.1.0
 info:
   title: notification-service
   version: 1.0.0
-  description: 'Сервис уведомлений и напоминаний (SMS, Email, Push).
-
-    Основной режим работы — асинхронное потребление событий из Apache Kafka (`vet.appointments`, `vet.medical`, `vet.payments`).
-
-    Хранилище: PostgreSQL (`notification_db`, с JSONB для параметров шаблонов и журнала доставки).
-
-    '
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
