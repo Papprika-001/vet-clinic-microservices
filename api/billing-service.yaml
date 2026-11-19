@@ -145,24 +145,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
-webhooks:
-  paymentCompleted:
-    post:
-      tags:
-      - internal
-      operationId: onPaymentCompletedEvent
-      summary: 'Событие Kafka (vet.payments): оплата успешно завершена'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PaymentCompletedEvent'
-      responses:
-        '200':
-          description: Событие обработано подписчиком
-        '400':
-          $ref: '#/components/responses/BadRequest'
 components:
   parameters:
     IdempotencyKey:
@@ -337,52 +319,6 @@ components:
           type: string
         signature:
           type: string
-    PaymentCompletedEvent:
-      type: object
-      description: 'Kafka топик: vet.payments | Издатель: billing-service | Подписчик: appointment-service'
-      required:
-      - eventId
-      - eventType
-      - schemaVersion
-      - occurredAt
-      - correlationId
-      - payload
-      properties:
-        eventId:
-          type: string
-          format: uuid
-        eventType:
-          type: string
-          enum:
-          - payment.completed
-        schemaVersion:
-          type: integer
-          example: 1
-        occurredAt:
-          type: string
-          format: date-time
-        correlationId:
-          type: string
-          format: uuid
-        payload:
-          type: object
-          required:
-          - paymentId
-          - appointmentId
-          - amount
-          - currency
-          properties:
-            paymentId:
-              type: string
-              format: uuid
-            appointmentId:
-              type: string
-              format: uuid
-            amount:
-              type: number
-              format: double
-            currency:
-              type: string
     Problem:
       type: object
       description: Единая модель ошибок RFC 9457 (application/problem+json)
@@ -417,3 +353,4 @@ components:
       in: header
       name: X-Webhook-Signature
       description: HMAC-SHA256 подпись от внешнего платёжного шлюза
+
