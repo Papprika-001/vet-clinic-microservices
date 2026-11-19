@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package vetclinic.catalog.v1;
+
+option go_package = "vetclinic/gen/catalog/v1;catalogv1";
+
+service ClinicCatalogService {
+  rpc GetServiceAndVetSlot (GetServiceAndVetSlotRequest) returns (GetServiceAndVetSlotResponse);
+
+  rpc GetVeterinarian (GetVeterinarianRequest) returns (GetVeterinarianResponse);
+}
+
+message GetServiceAndVetSlotRequest {
+  string vet_id = 1;       
+  string service_id = 2;   
+  string slot_start = 3;   
+}
+
+message GetServiceAndVetSlotResponse {
+  bool valid = 1;
+  string vet_id = 2;
+  string service_id = 3;
+  double price = 4;
+  string currency = 5;
+  int32 duration_minutes = 6;
+  string rejection_reason = 7; 
+}
+
+message GetVeterinarianRequest {
+  string vet_id = 1;
+}
+
+message GetVeterinarianResponse {
+  string vet_id = 1;
+  string full_name = 2;
+  string specialization = 3;
+  string branch_id = 4;
+}
