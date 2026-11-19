@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package vetclinic.billing.v1;
+
+option go_package = "vetclinic/gen/billing/v1;billingv1";
+
+service BillingService {
+  rpc CreatePrepayment (CreatePrepaymentRequest) returns (CreatePrepaymentResponse);
+}
+message CreatePrepaymentRequest {
+  string idempotency_key = 1;
+  string appointment_id = 2;
+  string owner_id = 3;
+  double amount = 4;
+  string currency = 5;
+  string description = 6;
+}
+
+message CreatePrepaymentResponse {
+  string payment_id = 1;
+  string invoice_id = 2;
+  string status = 3;
+  string payment_url = 4;
+}
