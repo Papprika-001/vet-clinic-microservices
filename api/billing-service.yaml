@@ -2,13 +2,6 @@ openapi: 3.1.0
 info:
   title: billing-service
   version: 1.0.0
-  description: 'Финансовый сервис: выставление счетов, предоплата онлайн, интеграция с внешним платёжным шлюзом,
-
-    обработка вебхуков и выполнение возвратов (Refunds).
-
-    Хранилище: PostgreSQL (`billing_db`).
-
-    '
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
