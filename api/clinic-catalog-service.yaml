@@ -2,15 +2,6 @@ openapi: 3.1.0
 info:
   title: clinic-catalog-service
   version: 1.0.0
-  description: 'Сервис справочника ветеринарной клиники: филиалы, ветеринары, прайс-лист услуг и расписание работы.
-
-    Хранилище: PostgreSQL (`catalog_db`) + Redis (кэш справочников).
-
-    Внутренние вызовы между микросервисами выполняются по gRPC (`api/proto/clinic_catalog.proto`),
-
-    а также продублированы в разделе `internal` для отладки и единого реестра контрактов.
-
-    '
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
