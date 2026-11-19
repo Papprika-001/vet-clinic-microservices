@@ -2,12 +2,6 @@ openapi: 3.1.0
 info:
   title: patient-service
   version: 1.0.0
-  description: 'Сервис пациентов и медицинских карт: владельцы, питомцы, история визитов, диагнозы, вакцинация и диагностические
-    файлы.
-
-    Хранилище: PostgreSQL (`patient_db`) + MinIO S3 (рентген-снимки, УЗИ, PDF-анализы).
-
-    '
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
